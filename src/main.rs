@@ -55,7 +55,7 @@ fn main() {
     }
 
     // 画像を保存
-    image.save(format!("{}.png", file_name)).unwrap();
+    image.save(format!("img/{}.png", file_name)).unwrap();
 }
 
 fn input_string() -> String {
