@@ -1,30 +1,46 @@
-use image;
+mod rgb;
+mod colors;
 
-struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
-}
+use image;
+use std::process;
+use std::io;
 
 fn main() {
-    println!("Creating Tangelo pattern...");
+    // 1色目を受け取る
+    println!("市松模様に利用する1色目を選択（black, white, red, blue, green）");
+    let color_1: String = input_string();
+    let color_1: Color = match validate(color_1) {
+        Result::Ok(color) => color,
+        Result::Err(message) => {
+            println!("failure: {}", message);
+            process::exit(0);
+        },
+    };
+
+    // 2色目を受け取る
+    println!("市松模様に利用する2色目を選択（black, white, red, blue, green）");
+    let color_2: String = input_string();
+    let color_2: Color = match validate(color_2) {
+        Result::Ok(color) => color,
+        Result::Err(message) => {
+            println!("failure: {}", message);
+            process::exit(0);
+        },
+    };
+
+    // 同じ色では市松模様にならないので弾く
+    if color_1 == color_2 {
+        println!("failure: 同じ色は選択できません！");
+        process::exit(0);
+    }
+
+    println!("生成する画像のファイル名（拡張子なし）を入力");
+    let file_name: String = input_string();
+
+    println!("Creating a pattern...");
 
     // 1ブロックのピクセル数
     let cel_width: i32 = 32;
-
-    // 緑の RBG 値
-    let green = Color {
-        r: 51,
-        g: 153,
-        b: 102,
-    };
-
-    // 黒の RBG 値
-    let black = Color {
-        r: 0,
-        g: 0,
-        b: 0,
-    };
 
     // 画像を新規作成
     let mut image = image::RgbImage::new(512, 512);
@@ -32,12 +48,51 @@ fn main() {
     // 市松模様の描画
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         if ((x / cel_width as u32) + (y / cel_width as u32)) % 2 == 0 {
-            *pixel = image::Rgb([black.r, black.g, black.b]);
+            *pixel = set_color_to_image(&color_1);
         } else {
-            *pixel = image::Rgb([green.r, green.g, green.b]);
+            *pixel = set_color_to_image(&color_2);
         }
     }
 
     // 画像を保存
-    image.save("result.png").unwrap();
+    image.save(format!("img/{}.png", file_name)).unwrap();
+}
+
+fn input_string() -> String {
+    let mut color = String::new();
+    io::stdin()
+        .read_line(&mut color)
+        .expect("failure: 行の読み込みに失敗しました");
+
+    color.trim().to_string()
+}
+
+#[derive(PartialEq)]
+enum Color {
+    Black,
+    White,
+    Red,
+    Blue,
+    Green,
+}
+
+fn validate(color: String) -> Result<Color, &'static str> {
+    match &*color {
+        "black" => Ok(Color::Black),
+        "white" => Ok(Color::White),
+        "red" => Ok(Color::Red),
+        "blue" => Ok(Color::Blue),
+        "green" => Ok(Color::Green),
+        _ => Err("failure: 不正な色です"),
+    }
+}
+
+fn set_color_to_image(color: &Color) -> image::Rgb<u8> {
+    match color {
+        Color::Black => image::Rgb([colors::black::get().r, colors::black::get().g, colors::black::get().b]),
+        Color::White => image::Rgb([colors::white::get().r, colors::white::get().g, colors::white::get().b]),
+        Color::Red => image::Rgb([colors::red::get().r, colors::red::get().g, colors::red::get().b]),
+        Color::Green => image::Rgb([colors::green::get().r, colors::green::get().g, colors::green::get().b]),
+        Color::Blue => image::Rgb([colors::blue::get().r, colors::blue::get().g, colors::blue::get().b]),
+    }
 }
